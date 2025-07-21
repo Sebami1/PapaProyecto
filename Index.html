@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Control de Ventas Mejorado</title>
+<style>
+  body { font-family: Arial; margin: 20px; background: #f7f7f7; }
+  input { margin: 5px; width: 130px; padding: 6px; }
+  button { margin: 5px; padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; }
+  button:hover { background: #218838; }
+  h2 { background: #333; color: white; padding: 10px; border-radius: 5px; }
+  .section { background: white; padding: 15px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 0 8px rgba(0,0,0,0.1); }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+  th { background: #eee; }
+</style>
+</head>
+<body>
+
+<div class="section">
+  <h2>Agregar Producto</h2>
+  <input type="text" id="nombre" placeholder="Nombre del producto" />
+  <input type="number" id="ofertado" placeholder="Cantidad ofertada" min="0" />
+  <input type="number" id="quedan" placeholder="Cantidad que queda" min="0" />
+  <br />
+  <input type="number" id="precioPrincipal" placeholder="Precio principal" min="0" step="0.01" />
+  <br />
+  <label><strong>Venta secundaria (opcional)</strong></label><br />
+  <input type="number" id="cantSecundaria" placeholder="Cantidad vendida secundaria" min="0" />
+  <input type="number" id="precioSecundaria" placeholder="Precio secundaria" min="0" step="0.01" />
+  <br />
+  <button onclick="agregarProducto()">Agregar producto</button>
+</div>
+
+<div class="section">
+  <h2>Agregar Gasto</h2>
+  <input type="text" id="nombreGasto" placeholder="Nombre del gasto" />
+  <input type="number" id="montoGasto" placeholder="Monto del gasto" min="0" step="0.01" />
+  <button onclick="agregarGasto()">Agregar gasto</button>
+</div>
+
+<div class="section">
+  <h2>Resumen de Productos</h2>
+  <table id="tablaProductos">
+    <thead>
+      <tr><th>Producto</th><th>Ofertado</th><th>Quedan</th><th>Vendidas</th></tr>
+    </thead>
+    <tbody></tbody>
+    <tfoot>
+      <tr><th>Total</th><th id="totalOfertado">0</th><th id="totalQuedan">0</th><th id="totalVendidas">0</th></tr>
+    </tfoot>
+  </table>
+</div>
+
+<div class="section">
+  <h2>Ventas</h2>
+  <table id="tablaVentas">
+    <thead>
+      <tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Importe</th></tr>
+    </thead>
+    <tbody></tbody>
+    <tfoot>
+      <tr><th colspan="3">Total importe</th><th id="totalImporte">0</th></tr>
+    </tfoot>
+  </table>
+</div>
+
+<div class="section">
+  <h2>Gastos</h2>
+  <table id="tablaGastos">
+    <thead>
+      <tr><th>Nombre</th><th>Importe</th></tr>
+    </thead>
+    <tbody></tbody>
+    <tfoot>
+      <tr><th>Total gastos</th><th id="totalGastos">0</th></tr>
+    </tfoot>
+  </table>
+</div>
+
+<div class="section">
+  <h2>Liquidación - Efectivo de Venta</h2>
+  <table>
+    <tr><td>Efectivo de venta</td><td id="efectivoVenta">0</td></tr>
+    <tr><td>Gastos</td><td id="gastosFinal">0</td></tr>
+    <tr><td><strong>Total</strong></td><td id="totalFinal">0</td></tr>
+  </table>
+</div>
+
+<script>
+  let totalOfertado = 0;
+  let totalQuedan = 0;
+  let totalVendidas = 0;
+  let totalImporte = 0;
+  let totalGastos = 0;
+
+  function agregarProducto() {
+    const nombre = document.getElementById('nombre').value.trim();
+    const ofertado = parseInt(document.getElementById('ofertado').value);
+    const quedan = parseInt(document.getElementById('quedan').value);
+    const precioPrincipal = parseFloat(document.getElementById('precioPrincipal').value);
+    const cantSecundaria = parseInt(document.getElementById('cantSecundaria').value) || 0;
+    const precioSecundaria = parseFloat(document.getElementById('precioSecundaria').value) || 0;
+
+    // Validaciones básicas
+    if (!nombre) {
+      alert('Ingresa el nombre del producto.');
+      return;
+    }
+    if (isNaN(ofertado) || ofertado < 0) {
+      alert('Ingresa cantidad ofertada válida.');
+      return;
+    }
+    if (isNaN(quedan) || quedan < 0 || quedan > ofertado) {
+      alert('Ingresa cantidad que queda válida.');
+      return;
+    }
+    if (isNaN(precioPrincipal) || precioPrincipal <= 0) {
+      alert('Ingresa un precio principal válido.');
+      return;
+    }
+    if (cantSecundaria < 0 || (cantSecundaria > (ofertado - quedan))) {
+      alert('Cantidad secundaria inválida.');
+      return;
+    }
+    if (cantSecundaria > 0 && (isNaN(precioSecundaria) || precioSecundaria <= 0)) {
+      alert('Ingresa un precio secundario válido.');
+      return;
+    }
+
+    const vendidas = ofertado - quedan;
+    const cantPrincipal = vendidas - cantSecundaria;
+
+    if (cantPrincipal < 0) {
+      alert('La cantidad secundaria no puede ser mayor que la cantidad vendida total.');
+      return;
+    }
+
+    // Agregar a tabla productos
+    const filaProd = `<tr>
+      <td>${nombre}</td>
+      <td>${ofertado}</td>
+      <td>${quedan}</td>
+      <td>${vendidas}</td>
+    </tr>`;
+    document.querySelector('#tablaProductos tbody').innerHTML += filaProd;
+
+    totalOfertado += ofertado;
+    totalQuedan += quedan;
+    totalVendidas += vendidas;
+    document.getElementById('totalOfertado').textContent = totalOfertado;
+    document.getElementById('totalQuedan').textContent = totalQuedan;
+    document.getElementById('totalVendidas').textContent = totalVendidas;
+
+    // Agregar ventas
+    if (cantPrincipal > 0) {
+      const impPrincipal = cantPrincipal * precioPrincipal;
+      const filaVentaPrincipal = `<tr>
+        <td>${nombre}</td>
+        <td>${cantPrincipal}</td>
+        <td>${precioPrincipal.toFixed(2)}</td>
+        <td>${impPrincipal.toFixed(2)}</td>
+      </tr>`;
+      document.querySelector('#tablaVentas tbody').innerHTML += filaVentaPrincipal;
+      totalImporte += impPrincipal;
+    }
+    if (cantSecundaria > 0) {
+      const impSecundaria = cantSecundaria * precioSecundaria;
+      const filaVentaSecundaria = `<tr>
+        <td>${nombre}</td>
+        <td>${cantSecundaria}</td>
+        <td>${precioSecundaria.toFixed(2)}</td>
+        <td>${impSecundaria.toFixed(2)}</td>
+      </tr>`;
+      document.querySelector('#tablaVentas tbody').innerHTML += filaVentaSecundaria;
+      totalImporte += impSecundaria;
+    }
+
+    document.getElementById('totalImporte').textContent = totalImporte.toFixed(2);
+
+    actualizarLiquidacion();
+
+    // Limpiar inputs
+    document.getElementById('nombre').value = '';
+    document.getElementById('ofertado').value = '';
+    document.getElementById('quedan').value = '';
+    document.getElementById('precioPrincipal').value = '';
+    document.getElementById('cantSecundaria').value = '';
+    document.getElementById('precioSecundaria').value = '';
+  }
+
+  function agregarGasto() {
+    const nombreGasto = document.getElementById('nombreGasto').value.trim();
+    const monto = parseFloat(document.getElementById('montoGasto').value);
+
+    if (!nombreGasto) {
+      alert('Ingresa el nombre del gasto.');
+      return;
+    }
+    if (isNaN(monto) || monto <= 0) {
+      alert('Ingresa un monto válido para el gasto.');
+      return;
+    }
+
+    const filaGasto = `<tr>
+      <td>${nombreGasto}</td>
+      <td>${monto.toFixed(2)}</td>
+    </tr>`;
+    document.querySelector('#tablaGastos tbody').innerHTML += filaGasto;
+
+    totalGastos += monto;
+    document.getElementById('totalGastos').textContent = totalGastos.toFixed(2);
+
+    actualizarLiquidacion();
+
+    // Limpiar inputs
+    document.getElementById('nombreGasto').value = '';
+    document.getElementById('montoGasto').value = '';
+  }
+
+  function actualizarLiquidacion() {
+    const efectivo = totalImporte - totalGastos;
+    document.getElementById('efectivoVenta').textContent = efectivo.toFixed(2);
+    document.getElementById('gastosFinal').textContent = totalGastos.toFixed(2);
+    document.getElementById('totalFinal').textContent = totalImporte.toFixed(2);
+  }
+</script>
+
+</body>
+</html>
